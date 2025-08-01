@@ -31,12 +31,20 @@ __global__ void mmul(const float *A, const float *B, float *C, int ds) {
   if ((idx < ds) && (idy < ds)){
     float temp = 0;
     for (int i = 0; i < ds; i++)
-      temp += A[FIXME*ds+i] * B[i*ds+FIXME];   // dot product of row and column
+      temp += A[idy*ds+i] * B[i*ds+idx];   // dot product of row and column
     C[idy*ds+idx] = temp;
   }
 }
 
 int main(){
+  int deviceCount = 0;
+  cudaGetDeviceCount(&deviceCount);
+  if (deviceCount == 0) {
+      fprintf(stderr, "No CUDA devices found.\n");
+      return -1;
+  }
+  cudaSetDevice(0);
+  cudaCheckErrors("Failed to set CUDA device");
 
   float *h_A, *h_B, *h_C, *d_A, *d_B, *d_C;
 
@@ -93,8 +101,8 @@ int main(){
   // Verify results
   cudaCheckErrors("kernel execution failure or cudaMemcpy H2D failure");
   for (int i = 0; i < DSIZE*DSIZE; i++) if (h_C[i] != A_val*B_val*DSIZE) {printf("mismatch at index %d, was: %f, should be: %f\n", i, h_C[i], A_val*B_val*DSIZE); return -1;}
-  printf("Success!\n"); 
+  printf("Success!\n");
 
   return 0;
 }
-  
+
