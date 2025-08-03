@@ -36,6 +36,13 @@ void fill_ints(int *x, int n) {
 }
 
 int main(void) {
+  int deviceCount = 0;
+  cudaGetDeviceCount(&deviceCount);
+  if (deviceCount == 0) {
+      fprintf(stderr, "No CUDA devices found.\n");
+      return -1;
+  }
+
   int *in, *out; // host copies of a, b, c
   int *d_in, *d_out; // device copies of a, b, c
   int size = (N + 2*RADIUS) * sizeof(int);
