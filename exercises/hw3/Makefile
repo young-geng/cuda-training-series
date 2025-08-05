@@ -10,6 +10,9 @@ vector_add: vector_add.cu
 test_vector_add: vector_add
 	./vector_add
 
+profile_vector_add: vector_add
+	ncu --section SpeedOfLight --section MemoryWorkloadAnalysis ./vector_add | tee vector_add_profile.txt
+
 vector_add_solution: vector_add_solution.cu
 	nvcc -o vector_add_solution vector_add_solution.cu
 
@@ -17,4 +20,4 @@ test_vector_add_solution: vector_add_solution
 	./vector_add_solution
 
 clean:
-	@rm -f vector_add vector_add_solution
+	@rm -f vector_add vector_add_solution vector_add_profile.txt
