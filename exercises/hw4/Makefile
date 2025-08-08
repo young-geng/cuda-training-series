@@ -12,6 +12,8 @@ test_matrix_sums: matrix_sums
 
 profile_matrix_sums: matrix_sums
 	ncu ./matrix_sums | tee matrix_sums_profile.txt
+	ncu --metrics l1tex__t_sectors_pipe_lsu_mem_global_op_ld.sum,l1tex__t_requests_pipe_lsu_mem_global_op_ld.sum \
+		./matrix_sums | tee -a matrix_sums_profile.txt
 
 matrix_sums_solution: matrix_sums_solution.cu
 	nvcc -o matrix_sums_solution matrix_sums_solution.cu
@@ -20,4 +22,4 @@ test_matrix_sums_solution: matrix_sums_solution
 	./matrix_sums_solution
 
 clean:
-	@rm -f matrix_sums matrix_sums_solution
+	@rm -f matrix_sums matrix_sums_solution matrix_sums_profile.txt

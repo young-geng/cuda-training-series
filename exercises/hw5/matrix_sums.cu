@@ -18,14 +18,43 @@ const size_t DSIZE = 16384;      // matrix side dimension
 const int block_size = 256;  // CUDA maximum is 1024
 // matrix row-sum kernel
 __global__ void row_sums(const float *A, float *sums, size_t ds){
+  int lane_id = threadIdx.x % warpSize;
+  int warp_id = threadIdx.x / warpSize;
+  int row_id = blockIdx.x;
+  float val = 0.0f;
+  int idx = 0;
+  __shared__ float sdata[block_size];
+  while (idx < ds) {  // grid stride loop to load
+    val += A[row_id * ds + idx];
+    idx += blockDim.x;
+  }
+  sdata[threadIdx.x] = val;
 
-  int idx = threadIdx.x+blockDim.x*blockIdx.x; // create typical 1D thread index from built-in variables
-  if (idx < ds){
-    float sum = 0.0f;
-    for (size_t i = 0; i < ds; i++)
-      sum += A[idx*ds+i];         // write a for loop that will cause the thread to iterate across a row, keeeping a running sum, and write the result to sums
-    sums[idx] = sum;
-}}
+  // Performs multiple iterations of warp reduction. In each iteration, each
+  // warp works independently to reduce warpSize(32) elements, and lane 0 writes
+  // the reduced result to shared memory. This reduces the total number of
+  // elements by warpSize, which will be the number of threads participating
+  // the next iteration.
+  for (int remaining_size = block_size; remaining_size > 0; remaining_size = remaining_size / warpSize) {
+    if (threadIdx.x < remaining_size) {
+      val = sdata[threadIdx.x];  // Load results from last round
+      for (int offset = warpSize/2; offset > 0; offset >>= 1) {
+        // Perform the reduction in a warp.
+        val += __shfl_down_sync(__activemask(), val, offset);
+      }
+      if (lane_id == 0) {
+        // The first thread in a warp writes the reduced result back to shared memory
+        sdata[warp_id] = val;
+      }
+    }
+    __syncthreads();
+  }
+  if (threadIdx.x == 0) {
+    sums[row_id] = sdata[0];
+  }
+}
+
+
 // matrix column-sum kernel
 __global__ void column_sums(const float *A, float *sums, size_t ds){
 
@@ -55,14 +84,16 @@ int main(){
   cudaMemcpy(d_A, h_A, DSIZE*DSIZE*sizeof(float), cudaMemcpyHostToDevice);
   cudaCheckErrors("cudaMemcpy H2D failure");
   //cuda processing sequence step 1 is complete
-  row_sums<<<(DSIZE+block_size-1)/block_size, block_size>>>(d_A, d_sums, DSIZE);
+  // row_sums<<<(DSIZE+block_size-1)/block_size, block_size>>>(d_A, d_sums, DSIZE);
+  row_sums<<<DSIZE, block_size>>>(d_A, d_sums, DSIZE);
+
   cudaCheckErrors("kernel launch failure");
   //cuda processing sequence step 2 is complete
   // copy vector sums from device to host:
   cudaMemcpy(h_sums, d_sums, DSIZE*sizeof(float), cudaMemcpyDeviceToHost);
   //cuda processing sequence step 3 is complete
   cudaCheckErrors("kernel execution failure or cudaMemcpy H2D failure");
-  if (!validate(h_sums, DSIZE)) return -1; 
+  if (!validate(h_sums, DSIZE)) return -1;
   printf("row sums correct!\n");
   cudaMemset(d_sums, 0, DSIZE*sizeof(float));
   column_sums<<<(DSIZE+block_size-1)/block_size, block_size>>>(d_A, d_sums, DSIZE);
@@ -72,8 +103,8 @@ int main(){
   cudaMemcpy(h_sums, d_sums, DSIZE*sizeof(float), cudaMemcpyDeviceToHost);
   //cuda processing sequence step 3 is complete
   cudaCheckErrors("kernel execution failure or cudaMemcpy H2D failure");
-  if (!validate(h_sums, DSIZE)) return -1; 
+  if (!validate(h_sums, DSIZE)) return -1;
   printf("column sums correct!\n");
   return 0;
 }
-  
+

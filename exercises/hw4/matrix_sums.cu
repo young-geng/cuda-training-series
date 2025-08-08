@@ -14,7 +14,7 @@
     } while (0)
 
 const size_t DSIZE = 16384;      // matrix side dimension
-const int block_size = 256;  // CUDA maximum is 1024
+const int block_size = 1024;  // CUDA maximum is 1024
 
 // matrix row-sum kernel
 __global__ void row_sums(const float *A, float *sums, size_t ds){
