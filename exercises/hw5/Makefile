@@ -52,4 +52,5 @@ clean:
 		max_reduction max_reduction_solution \
 		matrix_sums matrix_sums_solution \
 		matrix_sums_profile.txt \
+		matrix_sums_solution_profile.txt \
 		max_reduction_profile.txt
