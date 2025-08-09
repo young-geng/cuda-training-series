@@ -1,0 +1,32 @@
+# Makefile for CUDA training exercises hw1
+
+.PHONY: clean test_task3 test_task3_solution profile_task3 profile_task3_solution profile_all
+
+task3: task3.cu
+	nvcc -O3 -o task3 task3.cu
+
+test_task3: task3
+	./task3
+
+profile_task3: task3
+	ncu \
+		--metrics l1tex__t_sectors_pipe_lsu_mem_global_op_ld.sum,l1tex__t_requests_pipe_lsu_mem_global_op_ld.sum,l1tex__average_t_sectors_per_request_pipe_lsu_mem_global_op_ld.ratio,l1tex__t_sectors_pipe_lsu_mem_global_op_st.sum,l1tex__t_requests_pipe_lsu_mem_global_op_st.sum,l1tex__average_t_sectors_per_request_pipe_lsu_mem_global_op_st.ratio,smsp__sass_average_data_bytes_per_sector_mem_global_op_ld.pct,smsp__sass_average_data_bytes_per_sector_mem_global_op_st.pct,l1tex__data_pipe_lsu_wavefronts_mem_shared_op_ld.sum,l1tex__data_pipe_lsu_wavefronts_mem_shared_op_st.sum,l1tex__data_bank_conflicts_pipe_lsu_mem_shared_op_ld.sum,l1tex__data_bank_conflicts_pipe_lsu_mem_shared_op_st.sum,smsp__sass_average_data_bytes_per_wavefront_mem_shared.pct \
+		./task3 \
+	| tee task3_profile.txt
+
+task3_solution: task3_solution.cu
+	nvcc -O3 -o task3_solution task3_solution.cu
+
+test_task3_solution: task3_solution
+	./task3_solution
+
+profile_task3_solution: task3_solution
+	ncu \
+		--metrics l1tex__t_sectors_pipe_lsu_mem_global_op_ld.sum,l1tex__t_requests_pipe_lsu_mem_global_op_ld.sum,l1tex__average_t_sectors_per_request_pipe_lsu_mem_global_op_ld.ratio,l1tex__t_sectors_pipe_lsu_mem_global_op_st.sum,l1tex__t_requests_pipe_lsu_mem_global_op_st.sum,l1tex__average_t_sectors_per_request_pipe_lsu_mem_global_op_st.ratio,smsp__sass_average_data_bytes_per_sector_mem_global_op_ld.pct,smsp__sass_average_data_bytes_per_sector_mem_global_op_st.pct,l1tex__data_pipe_lsu_wavefronts_mem_shared_op_ld.sum,l1tex__data_pipe_lsu_wavefronts_mem_shared_op_st.sum,l1tex__data_bank_conflicts_pipe_lsu_mem_shared_op_ld.sum,l1tex__data_bank_conflicts_pipe_lsu_mem_shared_op_st.sum,smsp__sass_average_data_bytes_per_wavefront_mem_shared.pct \
+		./task3_solution \
+	| tee task3_solution_profile.txt
+
+profile_all: profile_task3 profile_task3_solution
+
+clean:
+	@rm -f task3 task3_solution task3_profile.txt task3_solution_profile.txt

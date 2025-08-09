@@ -10,6 +10,9 @@ overlap: overlap.cu
 test_overlap: overlap
 	./overlap
 
+profile_overlap: overlap
+	nsys profile -o overlap.qdrep overlap
+
 overlap_solution: overlap_solution.cu
 	nvcc -o overlap_solution overlap_solution.cu -DUSE_STREAMS
 
@@ -29,4 +32,4 @@ test_multi_solution: multi_solution
 	./multi_solution
 
 clean:
-	@rm -f overlap overlap_solution multi multi_solution
+	@rm -f overlap overlap_solution multi multi_solution overlap.nsys-rep
