@@ -60,8 +60,9 @@ __global__ void smem_cuda_transpose( const int m,
 
 /* determine my row tile and column tile index */
 
-  const int tileX = blockIdx.x * blockDim.x;
-  const int tileY = blockIdx.y * blockDim.y;
+  const int flat_thread_idx = threadIdx.y * blockDim.x + threadIdx.x;
+  const int tileX = blockIdx.y * blockDim.y + flat_thread_idx % blockDim.y;
+  const int tileY = blockIdx.x * blockDim.x + flat_thread_idx / blockDim.y;
 
   if( myRow < m && myCol < m )
   {
@@ -80,7 +81,9 @@ __global__ void smem_cuda_transpose( const int m,
   if( myRow < m && myCol < m )
   {
 /* write the result */
-    c[INDX(tileY + threadIdx.x, tileX + threadIdx.y, m)] =
+    // c[INDX(tileY + threadIdx.x, tileX + threadIdx.y, m)] =
+    //        smemArray[threadIdx.y][threadIdx.x];
+    c[INDX(tileX, tileY, m)] =
            smemArray[threadIdx.y][threadIdx.x];
   } /* end if */
   return;
