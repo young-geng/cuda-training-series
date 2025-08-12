@@ -2,7 +2,7 @@
 #include <stdio.h>
 using namespace cooperative_groups;
 const int nTPB = 256;
-__device__ int reduce(thread_group g, int *x, int val) { 
+__device__ int reduce(thread_group g, int *x, int val) {
   int lane = g.thread_rank();
   for (int i = g.size()/2; i > 0; i /= 2) {
     x[lane] = val;       g.sync();
@@ -16,14 +16,14 @@ __global__ void my_reduce_kernel(int *data){
 
   __shared__ int sdata[nTPB];
   // task 1a: create a proper thread block group below
-  auto g1 = FIXME
+  auto g1 = this_thread_block();
   size_t gindex = g1.group_index().x * nTPB + g1.thread_index().x;
   // task 1b: uncomment and create a proper 32-thread tile below, using group g1 created above
-  // auto g2 = FIXME 
-  // task 1c: uncomment and create a proper 16-thread tile below, using group g2 created above
-  // auto g3 = FIXME
+  auto g2 = tiled_partition(g1, 32);
+  // task 1c: uncomment and create a proper 16-thread tile below, using group g2created above
+  auto g3 = tiled_partition(g2, 16);
   // for each task, adjust the group to point to the last group created above
-  auto g = FIXME
+  auto g = g3;
   // Make sure we send in the appropriate patch of shared memory
   int sdata_offset = (g1.thread_index().x / g.size()) * g.size();
   reduce(g, sdata + sdata_offset, data[gindex]);
